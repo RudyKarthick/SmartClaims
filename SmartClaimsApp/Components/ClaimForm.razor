@@ -1,0 +1,68 @@
+@rendermode InteractiveServer
+@page "/claimform"
+@using SmartClaimsApp.Models
+@inject SmartClaimsApp.Services.ClaimService ClaimService
+
+<div class="container mt-4">
+    <h3>Insurance Claim Triage</h3>
+
+    <textarea @bind="claimText" rows="5" class="form-control mb-2" placeholder="Describe your claim here..."></textarea>
+
+    <button class="btn btn-primary" @onclick="AnalyzeClaim">Analyze</button>
+    <button class="btn btn-secondary ms-2" @onclick="ClearForm">Clear</button>
+
+    <p class="mt-2"><strong>Debug:</strong> @claimText</p>
+
+    @if (isLoading)
+    {
+        <p><em>Analyzing claim...</em></p>
+    }
+    @if (error)
+    {
+        <p style="color:red;">Something went wrong. Please try again.</p>
+    }
+
+    @if (result != null)
+    {
+        <div class="card p-3 mt-3 bg-light">
+            <h4>AI-Generated Triage Result</h4>
+            <p><strong>Priority:</strong> @result.Priority</p>
+            <p><strong>Fraud Risk:</strong> @result.FraudRisk</p>
+            <p><strong>Next Action:</strong> @result.SuggestedAction</p>
+            <p class="text-muted"><strong>Raw:</strong> @System.Text.Json.JsonSerializer.Serialize(result)</p>
+        </div>
+    }
+</div>
+
+@code {
+    private string claimText = "";
+    private ClaimResult? result;
+    private bool isLoading = false;
+    private bool error = false;
+
+    private async Task AnalyzeClaim()
+    {
+        error = false;
+        result = null;
+        isLoading = true;
+
+        var response = await ClaimService.AnalyzeClaimAsync(claimText);
+        if (response is not null)
+        {
+            result = response;
+        }
+        else
+        {
+            error = true;
+        }
+
+        isLoading = false;
+    }
+
+    private void ClearForm()
+    {
+        claimText = "";
+        result = null;
+        error = false;
+    }
+}
